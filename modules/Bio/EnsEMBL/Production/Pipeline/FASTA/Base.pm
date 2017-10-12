@@ -21,7 +21,7 @@ package Bio::EnsEMBL::Production::Pipeline::FASTA::Base;
 
 use strict;
 use warnings;
-use base qw/Bio::EnsEMBL::Production::Pipeline::Base/;
+use base qw/Bio::EnsEMBL::Production::Pipeline::Common::Base/;
 
 use File::Spec;
 
@@ -31,11 +31,12 @@ sub fasta_path {
 }
 
 sub old_path {
-  my ($self, $species) = @_;
+  my ($self, $species, $directory) = @_;
   my $base = $self->param('ftp_dir');
   my $prod = $self->production_name($species);
   my $release = $self->param('previous_release');
-  my $dir = File::Spec->catdir($base, "release-$release", 'fasta', $prod, 'dna');
+  $directory='dna' if !defined $directory;
+  my $dir = File::Spec->catdir($base, "release-$release", 'fasta', $prod, $directory);
 }
 
 # Filter a FASTA dump for reference regions only and parse names from the

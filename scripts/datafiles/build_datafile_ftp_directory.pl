@@ -159,6 +159,13 @@ sub _process_dba {
 
       $self->_process_datafile($df, $self->_target_datafiles_root($df));
     }
+    # Creating symlinks for README and md5sum files
+    if($schema_type eq 'core_like'){
+      $self->_process_datafile($datafiles->[0],$self->_target_species_root($datafiles->[0]), 'README');
+      $self->_process_datafile($datafiles->[0],$self->_target_species_root($datafiles->[0]), 'md5sum.txt');
+    }
+    $self->_process_datafile($datafiles->[0],$self->_target_datafiles_root($datafiles->[0]), 'README');
+    $self->_process_datafile($datafiles->[0],$self->_target_datafiles_root($datafiles->[0]), 'md5sum.txt');
   }
   $dba->dbc()->disconnect_if_idle();
   return;
@@ -168,72 +175,72 @@ sub _get_funcgen_DataFiles {
   my ($self, $dba) = @_;
   
   my $species = $dba->species;
-
-  my $segmentation_file_adaptor = $dba->get_SegmentationFileAdaptor;
-  my $result_set_adaptor        = $dba->get_ResultSetAdaptor;
-  my $coord_system_adaptor      = $dba->dnadb->get_CoordSystemAdaptor;
-
-  my @datafiles_fast_constructor_arguments;
+  my @funcgen_datafiles_found;
+  
+  my $data_file_adaptor = Bio::EnsEMBL::DBSQL::DataFileAdaptor->new($dba->dnadb);
+  
+  my $coord_system_adaptor = $dba->dnadb->get_CoordSystemAdaptor;
+  my $all_coord_systems = $coord_system_adaptor->fetch_all;
+  my $coord_system = $all_coord_systems->[0];
 
   if ($species eq 'homo_sapiens') {
   
     my $crispr_adaptor = $dba->get_CrisprSitesFileAdaptor;
     my $crispr_file    = $crispr_adaptor->fetch_file;
 
-    push @datafiles_fast_constructor_arguments, {
-        analysis      => $crispr_file->get_Analysis,
-        name          => $crispr_file->name,
-        file_type     => $crispr_file->file_type,
-        url           => $crispr_file->file,
-    };
+    my $data_file = Bio::EnsEMBL::DataFile->new(
+        -adaptor      => $data_file_adaptor,
+        -coord_system => $coord_system,
+        -analysis     => $crispr_file->get_Analysis,
+        -name         => $crispr_file->name,
+        -url          => $crispr_file->file,
+        -file_type    => $crispr_file->file_type,
+    );
+    push @funcgen_datafiles_found, $data_file;
   }
 
+  my $segmentation_file_adaptor = $dba->get_SegmentationFileAdaptor;
   my $all_segmentation_files = $segmentation_file_adaptor->fetch_all;
 
   foreach my $current_segmentation_file (@$all_segmentation_files) {
-    push @datafiles_fast_constructor_arguments, {
-      analysis      => $current_segmentation_file->get_Analysis,
-      name          => $current_segmentation_file->name,
-      file_type     => $current_segmentation_file->file_type,
-      url           => $current_segmentation_file->file,
-    };
+  
+    my $data_file = Bio::EnsEMBL::DataFile->new(
+        -adaptor      => $data_file_adaptor,
+        -coord_system => $coord_system,
+        -analysis     => $current_segmentation_file->get_Analysis,
+        -name         => $current_segmentation_file->name,
+        -url          => $current_segmentation_file->file,
+        -file_type    => $current_segmentation_file->file_type,
+    );
+    push @funcgen_datafiles_found, $data_file;
   }
-
-  my $all_result_sets = $result_set_adaptor->fetch_all;
-
-  RESULT_SET:
-  foreach my $current_result_set (@$all_result_sets) {
-
-    # We don't have bigwigs for all results sets, e.g.: technical replicates.
-    next if (! defined $current_result_set->dbfile_path);
-
-    push @datafiles_fast_constructor_arguments, {
-      analysis      => $current_result_set->analysis,
-      name          => $current_result_set->name,
-      file_type     => 'BIGWIG',
-      url           => $current_result_set->dbfile_path,
-    };
-  }
-
-  my @datafiles;
-  my $all_coord_systems = $coord_system_adaptor->fetch_all;
-  use Bio::EnsEMBL::DBSQL::DataFileAdaptor;
-  my $data_file_adaptor = Bio::EnsEMBL::DBSQL::DataFileAdaptor->new($result_set_adaptor->db);
-  Bio::EnsEMBL::Registry->add_adaptor($dba->species, 'funcgen', 'datafile', $data_file_adaptor);
-
-  foreach my $current_datafile_fast_constructor_argument (@datafiles_fast_constructor_arguments) {
-
-    $current_datafile_fast_constructor_argument->{dbID}         = undef;
-    $current_datafile_fast_constructor_argument->{coord_system} = $all_coord_systems->[0];
-    $current_datafile_fast_constructor_argument->{adaptor}      = $data_file_adaptor;
+  
+  my $alignment_adaptor = $dba->get_AlignmentAdaptor;
+  my $all_alignments    = $alignment_adaptor->fetch_all;
+  
+  ALIGNMENT:
+  foreach my $current_alignment (@$all_alignments) {
+  
+    # We don't have bigwigs for all alignments, e.g.: technical replicates.
+    next ALIGNMENT if (! $current_alignment->has_bigwig_DataFile);
     
-    use Bio::EnsEMBL::DataFile;
-    push @datafiles, Bio::EnsEMBL::DataFile->new_fast($current_datafile_fast_constructor_argument);
+    my $bigwig_data_file = $current_alignment->fetch_bigwig_DataFile;
+    
+    my $data_file = Bio::EnsEMBL::DataFile->new(
+        -adaptor      => $data_file_adaptor,
+        -coord_system => $coord_system,
+        -analysis     => $current_alignment->fetch_Analysis,
+        -name         => $current_alignment->name,
+        -url          => $bigwig_data_file->path,
+        -file_type    => $bigwig_data_file->file_type,
+    );
+    push @funcgen_datafiles_found, $data_file;
   }
 
-  return \@datafiles;
+  # Uiuiui
+  Bio::EnsEMBL::Registry->add_adaptor($dba->species, 'funcgen', 'datafile', $data_file_adaptor);
+  return \@funcgen_datafiles_found;
 }
-
 
 sub _get_core_like_DataFiles{
   my ($self, $dba) = @_;
@@ -263,7 +270,7 @@ sub _process_missing_ftp_links {
 
 
 sub _process_datafile {
-  my ($self, $datafile, $target_dir) = @_;
+  my ($self, $datafile, $target_dir, $file) = @_;
 
   if(! -d $target_dir) {
     if($self->opts->{dry}) {
@@ -274,41 +281,59 @@ sub _process_datafile {
       mkpath($target_dir) or die "Cannot create the directory $target_dir: $!";
     }
   }
-  my $files = $self->_files($datafile);
+  my $files = $self->_files($datafile,$file);
+  # For extra files, sort the array and get the latest version of the file.
+  if (defined $file){
+    # Sort versionned files
+    my @sorted_files = sort @{$files};
+    # Only keep latest file
+    my $last_file = pop @sorted_files;
+    my @files;
+    push @files,$last_file;
+    $files = \@files;
+  }
 
   foreach my $filepath (@{$files}) {
-    my ($file_volume, $file_dir, $name) = File::Spec->splitpath($filepath);
-    my $target = File::Spec->catfile($target_dir, $name);
-
-    if($self->opts()->{dry}) {
-      $self->v("\tWould have linked '%s' -> '%s'", $filepath, $target);
-      $self->_flag_missing_ftp_link($datafile);
-    }
-    else {
-      if(-e $target) {
-        if(-l $target) {
-          unlink $target;
-        }
-        elsif(-f $target) {
-          my $id = $datafile->dbID();
-          die "Cannot unlink $target as it is a file and not a symbolic link. Datafile ID was $id";
-        }
+    # Check if file exist, some directories are missing extra files
+    if (defined $filepath){
+      my ($file_volume, $file_dir, $name) = File::Spec->splitpath($filepath);
+      my $target;
+      if (defined $file){
+        $target = File::Spec->catfile($target_dir, $file);
       }
+      else {
+        $target = File::Spec->catfile($target_dir, $name);
+      }
+
+      if($self->opts()->{dry}) {
+        $self->v("\tWould have linked '%s' -> '%s'", $filepath, $target);
+        $self->_flag_missing_ftp_link($datafile);
+      }
+      else {
+        if(-e $target) {
+          if(-l $target) {
+            unlink $target;
+          }
+          elsif(-f $target) {
+            my $id = $datafile->dbID();
+            die "Cannot unlink $target as it is a file and not a symbolic link. Datafile ID was $id";
+          }
+        }
       
-      #Generate the relative link
-      my $relative_path_dir = File::Spec->abs2rel($file_dir, $target_dir);
-      my $relative_path = File::Spec->catfile($relative_path_dir, $name);
+        #Generate the relative link
+        my $relative_path_dir = File::Spec->abs2rel($file_dir, $target_dir);
+        my $relative_path = File::Spec->catfile($relative_path_dir, $name);
       
-      $self->v("\tLinking %s -> %s", $filepath, $target);
-      $self->v("\tRelative path is %s", $relative_path);
-      symlink($relative_path, $target) or die "Cannot symbolically link $filepath (${relative_path}) to $target: $!";
+        $self->v("\tLinking %s -> %s", $filepath, $target);
+        $self->v("\tRelative path is %s", $relative_path);
+        symlink($relative_path, $target) or die "Cannot symbolically link $filepath (${relative_path}) to $target: $!";
       
-      $self->_flag_missing_ftp_link($datafile);
+        $self->_flag_missing_ftp_link($datafile);
+      }
     }
   }
   return;
 }
-
 
 # Expected path: base/FILETYPE/SPECIES/TYPE/files
 # e.g. pub/release-66/bam/pan_trogladytes/genebuild/chimp_1.bam
@@ -414,10 +439,13 @@ sub _get_dbs {
 
 
 sub _files {
-  my ($self, $datafile) = @_;
+  my ($self, $datafile, $file) = @_;
   my $source_file = $datafile->path($self->opts->{datafile_dir});
   $source_file =~ s/funcgen\///;   
   my ($volume, $dir, $name) = File::Spec->splitpath($source_file);
+  if (defined $file){
+    $name=$file;
+  }
   my $escaped_name = quotemeta($name);
   my $regex = qr/^$escaped_name.*/;
 

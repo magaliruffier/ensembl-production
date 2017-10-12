@@ -45,38 +45,6 @@ sub param_defaults {
 sub fetch_input {
     my ($self) = @_;
 
-    # Delete by xref.info_type='PROJECTION' OR 'DEPENDENT'
-    my $sql_delete_1 = 'DELETE ox.*,onx.*  FROM xref x 
-		      JOIN object_xref ox USING (xref_id) 
-		      JOIN ontology_xref onx USING (object_xref_id) 
-		      JOIN analysis a USING (analysis_id)
-		      JOIN translation tl ON (ox.ensembl_id=tl.translation_id) 
-		      JOIN transcript tf USING (transcript_id) 
-		      JOIN seq_region s USING (seq_region_id) 
-		      JOIN coord_system c USING (coord_system_id) 
-		      WHERE x.external_db_id=1000 
-		      AND c.species_id=?
-		      AND (x.info_type="PROJECTION" 
-		      OR  x.info_type="DEPENDENT")';
-
-    # Delete by analysis.logic_name='go_projection' & 'interpro2go'
-    # interpro2go annotations should be superceded by GOA annotation
-    my $sql_delete_2 = 'DELETE ox.*,onx.*  FROM xref x 
-                      JOIN object_xref ox USING (xref_id) 
-                      JOIN ontology_xref onx USING (object_xref_id) 
-                      JOIN analysis a USING (analysis_id)
-                      JOIN translation tl ON (ox.ensembl_id=tl.translation_id) 
-                      JOIN transcript tf USING (transcript_id) 
-                      JOIN seq_region s USING (seq_region_id) 
-                      JOIN coord_system c USING (coord_system_id) 
-                      WHERE x.external_db_id=1000 
-                      AND c.species_id=?
-		      AND (a.logic_name="goa_import"
-		      OR a.logic_name="interpro2go")';
-
-    $self->param('sql_delete_1', $sql_delete_1);
-    $self->param('sql_delete_2', $sql_delete_2);
-
 return 0;
 }
 
@@ -89,19 +57,84 @@ sub run {
     my $file    = $self->param_required('gpad_file');
     my $species = $1 if($file=~/annotations_ensembl.*\-(.+)\.gpa/);
 
-    # Remove existing projected GO annotations from GOA 
+    # Remove existing projected GO annotations from GOA
     if ($self->param_required('delete_existing')) {
-        my $dba          = $reg->get_DBAdaptor($species, "core");         
-        my $sql_delete_1 = $self->param_required('sql_delete_1');
-        my $sql_delete_2 = $self->param_required('sql_delete_2');
+         # Delete by xref.info_type='PROJECTION' OR 'DEPENDENT'
+         my $sql_delete_1 = 'DELETE ox.*,onx.*,dx.*  FROM xref x
+            JOIN object_xref ox USING (xref_id)
+            LEFT JOIN ontology_xref onx USING (object_xref_id)
+            LEFT JOIN dependent_xref dx USING (object_xref_id)
+            JOIN analysis a USING (analysis_id)
+            JOIN translation tl ON (ox.ensembl_id=tl.translation_id)
+            JOIN transcript tf USING (transcript_id)
+            JOIN seq_region s USING (seq_region_id)
+            JOIN coord_system c USING (coord_system_id)
+            WHERE x.external_db_id=1000
+            AND c.species_id=?
+            AND (x.info_type="PROJECTION"
+            OR  x.info_type="DIRECT" OR x.info_type = "DEPENDENT")';
+
+        # Delete by analysis.logic_name='go_projection' & 'interpro2go'
+        # interpro2go annotations should be superceded by GOA annotation
+        my $sql_delete_2 = 'DELETE ox.*,onx.*,dx.*  FROM xref x
+                      JOIN object_xref ox USING (xref_id)
+                      LEFT JOIN ontology_xref onx USING (object_xref_id)
+                      LEFT JOIN dependent_xref dx USING (object_xref_id)
+                      JOIN analysis a USING (analysis_id)
+                      JOIN translation tl ON (ox.ensembl_id=tl.translation_id)
+                      JOIN transcript tf USING (transcript_id)
+                      JOIN seq_region s USING (seq_region_id)
+                      JOIN coord_system c USING (coord_system_id)
+                      WHERE x.external_db_id=1000
+                      AND c.species_id=?
+          AND (a.logic_name="goa_import"
+          OR a.logic_name="interpro2go")';
+
+        # Same deletes but for GOs mapped to transcripts
+        my $sql_delete_3 = 'DELETE ox.*,onx.*,dx.*  FROM xref x
+                      JOIN object_xref ox USING (xref_id)
+                      LEFT JOIN ontology_xref onx USING (object_xref_id)
+                      LEFT JOIN dependent_xref dx USING (object_xref_id)
+                      JOIN analysis a USING (analysis_id)
+                      JOIN transcript tf ON (ox.ensembl_id = tf.transcript_id)
+                      JOIN seq_region s USING (seq_region_id)
+                      JOIN coord_system c USING (coord_system_id)
+                      WHERE x.external_db_id=1000
+                      AND c.species_id=?
+                      AND (x.info_type="PROJECTION"
+                      OR  x.info_type="DIRECT" OR x.info_type = "DEPENDENT")';
+
+        my $sql_delete_4 = 'DELETE ox.*,onx.*,dx.*  FROM xref x
+                      JOIN object_xref ox USING (xref_id)
+                      LEFT JOIN ontology_xref onx USING (object_xref_id)
+                      LEFT JOIN dependent_xref dx USING (object_xref_id)
+                      JOIN analysis a USING (analysis_id)
+                      JOIN transcript tf ON (ox.ensembl_id = tf.transcript_id)
+                      JOIN seq_region s USING (seq_region_id)
+                      JOIN coord_system c USING (coord_system_id)
+                      WHERE x.external_db_id=1000
+                      AND c.species_id=?
+                      AND (a.logic_name="goa_import"
+                      OR a.logic_name="interpro2go")';
+        my $dba          = $reg->get_DBAdaptor($species, "core");
         my $sth_1        = $dba->dbc->prepare($sql_delete_1);
         my $sth_2        = $dba->dbc->prepare($sql_delete_2);
+        my $sth_3        = $dba->dbc->prepare($sql_delete_3);
+        my $sth_4        = $dba->dbc->prepare($sql_delete_4);
 
         $sth_1->execute($dba->species_id());
         $sth_2->execute($dba->species_id());
+        $sth_3->execute($dba->species_id());
+        $sth_4->execute($dba->species_id());
         $sth_1->finish();
         $sth_2->finish();
+        $sth_3->finish();
+        $sth_4->finish();
+        $dba->dbc->disconnect_if_idle();
     }
+
+    my $hive_dbc = $self->dbc;
+    $hive_dbc->disconnect_if_idle() if defined $self->dbc;
 
     my $odba = $reg->get_adaptor('multi', 'ontology', 'OntologyTerm');
     my $gos  = $self->fetch_ontology($odba);
@@ -110,8 +143,8 @@ sub run {
 
     my (%adaptor_hash, %dbe_adaptor_hash, %t_adaptor_hash );
     my ($tl_adaptor, $dbe_adaptor, $t_adaptor);
-    my ($translation, $translations);
-    my (%translation_hash, %species_missed, %species_added);
+    my ($translation, $translations, $transcript, $transcripts);
+    my (%translation_hash, %transcript_hash, %species_missed, %species_added);
     # When no stable_id or not found in db, try corresponding direct xref
     my %species_added_via_xref;
     # When GO mapped to Ensembl stable_id, add as direct xref
@@ -119,6 +152,8 @@ sub run {
     # UniProt data is the latest, we might not have the links yet
     # This should be rare though, so numbers should stay low
     my %unmatched_uniprot;
+    my %unmatched_rnacentral;
+    my ($is_protein, $is_transcript);
 
     while (<FILE>) {
       chomp $_;
@@ -129,7 +164,7 @@ sub run {
       # $go_evidence and $tgt_species should always be populated
       # The remaining fields might or might not, but they should alwyays be available in that order
       my ($go_evidence, $tgt_species, $tgt_gene, $tgt_feature, $src_species, $src_gene, $src_protein) = split /\|/, $annotation_properties;
-      my ($tgt_protein, $tgt_transcript);
+      my ($tgt_protein, $tgt_transcript, $master_xref);
       $tgt_gene    =~ s/tgt_gene=\w+:// if $tgt_gene;
       $tgt_species =~ s/tgt_species=// if $tgt_species;
 
@@ -176,7 +211,7 @@ sub run {
 
     my $info_type = 'DIRECT';
     my $info_text = $assigned_by;
-    if ($assigned_by eq 'Ensembl' and defined $src_protein) {
+    if ($assigned_by =~ /Ensembl/ and defined $src_protein) {
       $src_protein =~ s/src_protein=\w+://;
       $src_species =~ s/src_species=//;
       $info_text   = "from $src_species translation $src_protein";
@@ -202,7 +237,7 @@ sub run {
      $analysis = Bio::EnsEMBL::Analysis->
         new( -logic_name      => 'goa_import',
              -db              => 'GO',
-             -db_version      => '',
+             -db_version      => undef,
              -program         => 'goa_import',
              -description     => 'Gene Ontology xrefs data from GOA',
              -display_label   => 'GO xrefs from GOA',
@@ -212,65 +247,101 @@ sub run {
 
    # There could technically be more than one xref with the same display_label
    # In practice, we just want to add it as master_xref, so the first one is fine
-   my $uniprot_xrefs = $dbe_adaptor->fetch_all_by_name($db_object_id, 'Uniprot/SWISSPROT');
-   if (!$uniprot_xrefs) {
-     $uniprot_xrefs = $dbe_adaptor->fetch_all_by_name($db_object_id, 'Uniprot/SPTREMBL');
+   # Distinguish if data is UniProt (proteins) or RNACentral (transcripts)
+   if ($db =~ /UniProt/) {
+      $is_protein = 1;
+      my $uniprot_xrefs = $dbe_adaptor->fetch_all_by_name($db_object_id);
+      my @master_xref = grep { $_->dbname =~ m/uniprot/i } @$uniprot_xrefs;
+      if (scalar(@master_xref) !=0 ) {
+        my $master_xref = $master_xref[0];
+        $go_xref->add_linkage_type($go_evidence, $master_xref);
+       } else {
+        $unmatched_uniprot{$tgt_species}++;
+       }
+    } elsif ($db =~ /RNAcentral/) {
+      $is_transcript = 1;
+      # Accession is the version with taxonomy id appended, e.g. URS0000007FBA_9606
+      # We store as URS0000007FBA, so need to remove everything from the _
+      my ($go_evidence, $tgt_species, $precursor_rna) = split /\|/, $annotation_properties;
+      $precursor_rna =~ s/precursor_rna=// if $precursor_rna;
+      $go_evidence =~ s/go_evidence=// if $go_evidence;
+      # precursor_rna could be a list of accessions
+      my @precursor_rnas = split(",", $precursor_rna) if $precursor_rna;
+      foreach my $rna (@precursor_rnas) {
+        $rna =~ s/_[0-9]*//;
+        $db_object_id = $rna;
+        my $rnacentral_xrefs = $dbe_adaptor->fetch_all_by_name($db_object_id, 'RNAcentral');
+        if (scalar(@$rnacentral_xrefs) != 0) {
+          $master_xref = $rnacentral_xrefs->[0];
+          $go_xref->add_linkage_type($go_evidence, $master_xref);
+          $transcripts = $t_adaptor->fetch_all_by_external_name($db_object_id);
+  
+          foreach my $transcript (@$transcripts) {
+            $dbe_adaptor->store($go_xref, $transcript->dbID, 'Transcript', 1, $master_xref);
+            $species_added_via_xref{$tgt_species}++;
+           }
+        } else {
+          $unmatched_rnacentral{$tgt_species}++;
+        }
+      }
+   } elsif ($db =~ /ensembl/) {
+     $go_xref->add_linkage_type($go_evidence);
    }
-   if ($uniprot_xrefs) {
-     $go_xref->add_linkage_type($go_evidence, $uniprot_xrefs->[0]);
-    } else {
-     $unmatched_uniprot{$tgt_species}++;
-    }
 
    # If GOA did not provide a tgt_feature, we have to guess the correct target based on our xrefs
    # This is slower, hence only used if nothing better is available
    if (!defined $tgt_feature) {
-      $translations = $tl_adaptor->fetch_all_by_external_name($db_object_id);
+      if ($is_protein) {
+         $translations = $tl_adaptor->fetch_all_by_external_name($db_object_id);
+   
+         # Protein xref is attached to translation
+         # But GO term should be attached to transcript
+         foreach my $translation (@$translations) {
+           $dbe_adaptor->store($go_xref, $translation->transcript->dbID, 'Transcript', 1, $master_xref);
+           $species_added_via_xref{$tgt_species}++;
+         }
+      } elsif ($is_transcript) {
+         $transcripts = $t_adaptor->fetch_all_by_external_name($db_object_id);
 
-      foreach my $translation (@$translations) {
-        $dbe_adaptor->store($go_xref, $translation->dbID, 'Translation', 1);
-        $species_added_via_xref{$tgt_species}++;
+         foreach my $transcript (@$transcripts) {
+           $dbe_adaptor->store($go_xref, $transcript->dbID, 'Transcript', 1, $master_xref);
+           $species_added_via_xref{$tgt_species}++;
+         }
       }
       # If GOA provide a tgt_protein, this is the direct mapping to Ensembl feature
       # This becomes our object for the new xref
    } elsif (defined $tgt_protein) {
       if ($translation_hash{$tgt_protein}) {
           $translation = $translation_hash{$tgt_protein};
+          $transcript = $transcript_hash{$tgt_protein};
       } else {
           $translation = $tl_adaptor->fetch_by_stable_id($tgt_protein);
+          $transcript = $translation->transcript;
           $translation_hash{$tgt_protein} = $translation;
+          $transcript_hash{$tgt_protein} = $transcript;
       }
     
       if (defined $translation) {
-      	$dbe_adaptor->store($go_xref, $translation->dbID, 'Translation', 1);
+      	$dbe_adaptor->store($go_xref, $transcript->dbID, 'Transcript', 1, $master_xref);
       	$species_added_via_tgt{$tgt_species}++;
       } else {
       	$species_missed{$tgt_species}++;
       }
    # If GOA provide a tgt_transcript, it could be a list of transcript mappings
-   # We still need to fetch the translation as GOs are linked on protein level
    } elsif (defined $tgt_transcript) {
       my @tgt_transcripts = split(",", $tgt_transcript);
 
       foreach my $transcript (@tgt_transcripts) {
-        if ($translation_hash{$transcript}) {
-          $translation = $translation_hash{$transcript};
-        } else {
-          my $translation_transcript = $t_adaptor->fetch_by_stable_id($transcript);
-          # Some stable ids might be deprecated, hence $translation_transcript is not always defined
-          $translation = $tl_adaptor->fetch_by_Transcript($translation_transcript) if $translation_transcript;
-        }
 
-       if (defined $translation) {
-          $dbe_adaptor->store($go_xref, $translation->dbID, 'Translation', 1);
-          $species_added_via_tgt{$tgt_species}++;
-       } else {
-          $species_missed{$tgt_species}++;
-       }
+       $dbe_adaptor->store($go_xref, $transcript->dbID, 'Transcript', 1, $master_xref);
+       $species_added_via_tgt{$tgt_species}++;
      }
   }
 
   }# while FILE
+
+$odba->dbc->disconnect_if_idle();
+$dbe_adaptor->dbc->disconnect_if_idle();
 
 
 return 0;

@@ -53,7 +53,6 @@ sub default_options {
 	division_name     => '', # Eg: protists, fungi, plants, metazoa
         pipeline_name     => $self->o('ENV','USER').'_XrefProjections_'.$self->o('ensembl_release'),
         output_dir      => '/lustre/scratch109/ensembl/'.$self->o('ENV', 'USER').'/workspace/'.$self->o('pipeline_name'),
-	email => $self->o('ENV', 'USER').'@ebi.ac.uk',
 	## Flags controlling sub-pipeline to run
 	    # '0' by default, set to '1' if this sub-pipeline is needed to be run
     	flag_GeneNames    => '1',
@@ -71,6 +70,7 @@ sub default_options {
         # If the parallel flag is off, the projections will run sequentially, one set of projections at the time.
         # Default value is 1
         parallel_GeneNames_projections => '0',
+        parallel_GeneDescription_projections => '0',
         parallel_GO_projections       => '0',
     ## analysis_capacity values for some analyses:
         geneNameproj_capacity  =>  '20',
@@ -98,9 +98,9 @@ sub default_options {
                                 # Taxon name of species to project to
                                 'taxons'      => ['Sarcopterygii'],
                                 # Taxon name of species to exclude 
-                                'antitaxons' => ['Sciurognathi'],
+                                'antitaxons' => ['Castorimorpha','Myomorpha'],
                                 # project all the xrefs instead of display xref only. This is mainly used for the mouse strains at the moment.
-                                'project_all' =>  0,
+                                'project_xrefs' =>  0,
                                 # Project all white list. Only the following xrefs will be projected from source to target. This doesn't affect display xref
                                 'white_list'  => [],
                                 # Run the pipeline on all the species  
@@ -128,7 +128,7 @@ sub default_options {
                                 # Taxon name of species to exclude 
                                 'antitaxons' => [],
                                 # project all the xrefs instead of display xref only. This is mainly used for the mouse strains at the moment.
-                                'project_all' =>  0,
+                                'project_xrefs' =>  0,
                                 # Project all white list. Only the following xrefs will be projected from source to target. This doesn't affect display xref
                                 'white_list'  => [],
                                 # Run the pipeline on all the species 
@@ -152,11 +152,11 @@ sub default_options {
                                 # target species division to project to
                                 'division'    => [],
                                 # Taxon name of species to project to
-                                'taxons'      => ['Sciurognathi'],
+                                'taxons'      => ['Castorimorpha','Myomorpha'],
                                 # Taxon name of species to exclude 
                                 'antitaxons' => [],
                                 # project all the xrefs instead of display xref only. This is mainly used for the mouse strains at the moment.
-                                'project_all' =>  0,
+                                'project_xrefs' =>  0,
                                 # Project all white list. Only the following xrefs will be projected from source to target. This doesn't affect display xref
                                 'white_list'  => [],
                                 # Run the pipeline on all the species 
@@ -184,7 +184,7 @@ sub default_options {
                                 # Taxon name of species to exclude 
                                 'antitaxons' => [],
                                 # project all the xrefs instead of display xref only. This is mainly used for the mouse strains at the moment.
-                                'project_all' =>  0,
+                                'project_xrefs' =>  0,
                                 # Project all white list. Only the following xrefs will be projected from source to target. This doesn't affect display xref
                                 'white_list'  => [],
                                 # Run the pipeline on all the species 
@@ -212,7 +212,7 @@ sub default_options {
                                 # Taxon name of species to exclude 
                                 'antitaxons' => [],
                                 # project all the xrefs instead of display xref only. This is mainly used for the mouse strains at the moment.
-                                'project_all' =>  0,
+                                'project_xrefs' =>  0,
                                 # Project all white list. Only the following xrefs will be projected from source to target. This doesn't affect display xref
                                 'white_list'  => [],
                                 # Run the pipeline on all the species 
@@ -226,31 +226,6 @@ sub default_options {
                                 'percent_id_filter'      => '30',
                                 'percent_cov_filter'     => '66',
                         },
-                 #Only uncomment when mouse strains have changed
-#                  '6'=>{
-#                                # source species to project from
-#                                'source'      => 'mus_musculus', # 'schizosaccharomyces_pombe'
- #                               # target species to project to
- #                               'species'     =>  ['mus_spretus_spreteij'], # ['puccinia graminis', 'aspergillus_nidulans']
- #                               # target species to exclude
- #                               'antispecies' => [],
- #                               # target species division to project to
- #                               'division'    => [],
- #                               # project all the xrefs instead of display xref only. This is mainly used for the mouse strains at the moment.
- #                               'project_all' =>  1,
- #                               # Project all white list. Only the following xrefs will be projected from source to target. This doesn't affect display xref
- #                               'white_list'  => ['RefSeq_mRNA', 'RefSeq_mRNA_predicted','RefSeq_ncRNA','RefSeq_ncRNA_predicted','RefSeq_peptide','RefSeq_peptide_predicted','EntrezGene','EntrezGene_trans_name','WikiGene','Uniprot/SPTREMBL','Uniprot/SWISSPROT','Uniprot_gn','protein_id','UniParc','ArrayExpress','RNACentral','MGI','MGI_trans_name','miRBase','miRBase_trans_name','RFAM','RFAM_trans_name'],
-  #                              # Run the pipeline on all the species 
-  #                              'run_all'     =>  0, # 1/0
-  #                              # source species GeneName filter
-  #                              'geneName_source'                => ['MGI', 'MGI_trans_name'],
-  #                              # homology types filter
-  #                              'method_link_type'       => 'ENSEMBL_ORTHOLOGUES',
-  #                              'homology_types_allowed' => ['ortholog_one2one'],
-  #                              # homology percentage identity filter
-  #                              'percent_id_filter'      => '30',
-  #                              'percent_cov_filter'     => '66',
-  #                     },
 		},
 
 	## GeneDescription Projection 
@@ -267,7 +242,7 @@ sub default_options {
                                  # Taxon name of species to project to
                                  'taxons'      => ['Sarcopterygii'],
                                  # Taxon name of species to exclude 
-                                 'antitaxons' => ['Sciurognathi'],
+                                 'antitaxons' => ['Castorimorpha','Myomorpha'],
                                  # project all the xrefs instead of display xref only. This is mainly used for the mouse strains at the moment.
                         	 			 'run_all'     =>  0, # 1/0
                                  # source species GeneName filter for GeneDescription
@@ -320,7 +295,7 @@ sub default_options {
                                  # target species division to project to
                                  'division'    => [],
                                  # Taxon name of species to project to
-                                 'taxons'      => ['Sciurognathi'],
+                                 'taxons'      => ['Castorimorpha','Myomorpha'],
                                  # Taxon name of species to exclude 
                                  'antitaxons' => [],
                                  'run_all'     =>  0, # 1/0
@@ -391,31 +366,6 @@ sub default_options {
                                  'percent_id_filter'      => '30',
                                  'percent_cov_filter'     => '66',
                         },
-                        #Only uncoment when the mouse strains have changed
-#                    '6'=>{
-#                                 # source species to project from
-#                                 'source'      => 'mus_musculus', # 'schizosaccharomyces_pombe'
-#                                 # target species to project to
-#                                 'species'     => ['mus_spretus_spreteij'], # ['puccinia graminis', 'aspergillus_nidulans']
-#                                 # target species to exclude
-#                                 'antispecies' => [],
-#                                 # target species division to project to
-#                                 'division'    => [],
-#                                 'run_all'     =>  0, # 1/0
-#                                 # source species GeneName filter for GeneDescription
-#                                 'geneName_source'                => ['MGI', 'MGI_trans_name'],
-#                                 # source species GeneDescription filter
-#                                 'geneDesc_rules'         => [],
-#                                 # target species GeneDescription filter
-#                                 'geneDesc_rules_target'  => ['Uncharacterized protein', 'Predicted protein', 'Gene of unknown', 'hypothetical protein'] ,
-#                                 # homology types filter
-#                                 'method_link_type'       => 'ENSEMBL_ORTHOLOGUES',
-#                                 'homology_types_allowed' => ['ortholog_one2one'],
-#                                 # homology percentage identity filter
-#                                 'percent_id_filter'      => '30',
-#                                 'percent_cov_filter'     => '66',
-#                        },
-#
 	    },
 
 		#  Off by default. 
@@ -438,35 +388,11 @@ sub default_options {
                 #  before doing projection
                 flag_delete_gene_descriptions   => '1',
         # Tables to dump for GeneNames & GeneDescription projections subpipeline
-        g_dump_tables => ['gene', 'xref','transcript'],
+        g_dump_tables => ['gene', 'xref','transcript','object_xref','external_db','external_synonym'],
         
  	    # Email Report subject
         gd_subject    => $self->o('pipeline_name').' subpipeline GeneDescriptionProjection has finished',
         gn_subject    => $self->o('pipeline_name').' subpipeline GeneNamesProjection has finished',
-
-	    # This Array of hashes is supplied to the 'AnalysisSetup' Runnable to 
-	    # update analysis & analysis_description table
-#		required_analysis =>
-#   	[
-#     		{
-#       	 'logic_name'    => 'go_projection',
-#       	 'db'            => 'GO',
-#       	 'db_version'    => undef,
-#     		},     	
-#		],
-                required_analysis =>[],
-    	# Remove existing analyses; 
-    	# On '1' by default, if =0 then existing analyses will remain, 
-		#  with the logic_name suffixed by '_bkp'.
-    	delete_existing => 0,
-    
-		# Delete rows in tables connected to the existing analysis (via analysis_id)
-    	linked_tables => [], 
-  	        
-	    # Retrieve analsysis descriptions from the production database;
-    	# the supplied registry file will need the relevant server details.
-	    production_lookup => 1,
-
 
 	    
 	## For all pipelines
@@ -474,22 +400,6 @@ sub default_options {
        flag_store_projections => '1',
 		
     };
-}
-
-
-sub resource_classes {
-    my $self = shift;
-    return {
-      'default'                 => {'LSF' => '-q production-rh7 -M 500 -R "rusage[mem=500]"'},
-      'mem'                     => {'LSF' => '-q production-rh7 -M 1000 -R "rusage[mem=1000]"'},
-      '2Gb_mem'         => {'LSF' => '-q production-rh7 -M 2000 -R "rusage[mem=2000]"' },
-      '24Gb_mem'        => {'LSF' => '-q production-rh7 -M 24000 -R "rusage[mem=24000]"' },
-      '250Mb_mem'       => {'LSF' => '-q production-rh7 -M 250 -R "rusage[mem=250]"' },
-      '500Mb_mem'       => {'LSF' => '-q production-rh7 -M 500 -R "rusage[mem=500]"' },
-      '1Gb_mem'             => {'LSF' => '-q production-rh7 -M 1000 -R "rusage[mem=1000]"' },
-      '8Gb_mem'             => {'LSF' => '-q production-rh7 -M 8000 -R "rusage[mem=8000]"' },
-      'urgent_hcluster' => {'LSF' => '-q production-rh7' },
-    }
 }
 
 1;

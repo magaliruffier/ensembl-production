@@ -41,6 +41,9 @@ sub run {
     my $projection_list = $self->param('projection_list');
     my $g_config = $self->param_required('g_config') || die "'g_config' is an obligatory parameter";
     my $parallel_GeneNames_projections = $self->param('parallel_GeneNames_projections');
+    my $parallel_GeneDescription_projections => $self->param('parallel_GeneDescription_projections');
+    my $flag_GeneNames = $self->param('flag_GeneNames');
+    my $flag_GeneDescr = $self->param('flag_GeneDescr');
     my $final_projection_list;
 
     if ($projection_list)
@@ -58,7 +61,7 @@ sub run {
          my $species                = $final_projection_list->{$pair}->{'species'};
          my $antispecies            = $final_projection_list->{$pair}->{'antispecies'};
          my $division               = $final_projection_list->{$pair}->{'division'};
-         my $project_all            = $final_projection_list->{$pair}->{'project_all'};
+         my $project_xrefs            = $final_projection_list->{$pair}->{'project_xrefs'};
          my $run_all                = $final_projection_list->{$pair}->{'run_all'};
          my $taxons                 = $final_projection_list->{$pair}->{'taxons'};
          my $antitaxons             = $final_projection_list->{$pair}->{'antitaxons'};
@@ -83,7 +86,7 @@ sub run {
 		 'species'     		  => $species, 
 		 'antispecies' 		  => $antispecies, 
   		 'division'    	  	  => $division, 
-       'project_all'     => $project_all,
+       'project_xrefs'     => $project_xrefs,
 		 'run_all' 		  => $run_all,
      'taxons'       => $taxons,
      'antitaxons'       => $antitaxons,
@@ -97,12 +100,12 @@ sub run {
 		 'geneDesc_rules_target'  => $geneDesc_rules_target,
      'white_list'             => $white_list
 		},2);
-                # If parallel_GeneNames_projections is defined, we run all the projections at the same time in parallel
-          if ($parallel_GeneNames_projections){
+                # If parallel_GeneNames_projections or parallel_GeneDescription_projections is defined, we run all the projections at the same time in parallel
+          if (($flag_GeneNames and $parallel_GeneNames_projections) or ($flag_GeneDescr and $parallel_GeneDescription_projections)){
             $self->dataflow_output_id({'projection_list'  => {},
                                  'species'                => $species,
                                  'source'                 => $source,
-                                 'project_all'            => $project_all},1);
+                                 'project_xrefs'            => $project_xrefs},1);
           }
           # else, we run the projections sequentially, one set of projection at the time
           else{
@@ -111,14 +114,14 @@ sub run {
             $self->dataflow_output_id({'projection_list'       => $self->param('projection_list'),
                                  'species'                => $species,
                                  'source'                 => $source,
-                                 'project_all'            => $project_all},1);
+                                 'project_xrefs'            => $project_xrefs},1);
           }
            # If we only run one set of projection then behave like parallel projections
           else{
             $self->dataflow_output_id({'projection_list'  => {},
                                  'species'                => $species,
                                  'source'                 => $source,
-                                 'project_all'            => $project_all},1);
+                                 'project_xrefs'            => $project_xrefs},1);
           }
           last;
           }

@@ -54,6 +54,7 @@ sub default_options {
         pipeline_name => 'core_handover_update_'.$self->o('release'),
         
         email => $self->o('ENV', 'USER').'@ebi.ac.uk',
+
     };
 }
 
@@ -82,7 +83,7 @@ sub pipeline_analyses {
         -input_ids  => [ {} ],
         -max_retry_count  => 10,
         -flow_into  => {
-         '5->A'  => ['ConstitutiveExonsVega', 'PepStatsVega'],
+         #'5->A'  => ['ConstitutiveExonsVega', 'PepStatsVega'],
          '3->A'  => ['PercentRepeat', 'CodingDensity', 'ShortNonCodingDensity'],
          '2->A'  => ['GeneGC', 'PepStats', 'GeneCount', 'ConstitutiveExons', 'GenomeStats'],
          'A->1'  => ['Notify'], 
@@ -104,7 +105,8 @@ sub pipeline_analyses {
         -logic_name => 'PepStats',
         -module     => 'Bio::EnsEMBL::Production::Pipeline::Production::PepStats',
         -parameters => {
-          tmpdir => '/tmp', binpath => '/software/pubseq/bin/emboss',
+          tmpdir => '/tmp',
+          pepstats_binary => 'pepstats',
           dbtype => 'core',
         },
         -max_retry_count  => 3,
@@ -112,30 +114,30 @@ sub pipeline_analyses {
         -rc_name          => 'mem',
       },
 
-      {
-        -logic_name => 'ConstitutiveExonsVega',
-        -module     => 'Bio::EnsEMBL::Production::Pipeline::Production::ConstitutiveExons',
-        -parameters => {
-          dbtype => 'vega',
-        },
-        -max_retry_count  => 5,
-        -hive_capacity    => 10,
-        -rc_name          => 'normal',
-        -can_be_empty     => 1,
-      },
+#      {
+#        -logic_name => 'ConstitutiveExonsVega',
+#        -module     => 'Bio::EnsEMBL::Production::Pipeline::Production::ConstitutiveExons',
+#        -parameters => {
+#          dbtype => 'vega',
+#        },
+#        -max_retry_count  => 5,
+#        -hive_capacity    => 10,
+#        -rc_name          => 'normal',
+#        -can_be_empty     => 1,
+#      },
 
-      {
-        -logic_name => 'PepStatsVega',
-        -module     => 'Bio::EnsEMBL::Production::Pipeline::Production::PepStats',
-        -parameters => {
-          tmpdir => '/tmp', binpath => '/software/pubseq/bin/emboss',
-          dbtype => 'vega',
-        },
-        -max_retry_count  => 5,
-        -hive_capacity    => 10,
-        -rc_name          => 'mem',
-        -can_be_empty     => 1,
-      },
+#      {
+#        -logic_name => 'PepStatsVega',
+#        -module     => 'Bio::EnsEMBL::Production::Pipeline::Production::PepStats',
+#        -parameters => {
+#          tmpdir => '/tmp', binpath => '/software/pubseq/bin/emboss',
+#          dbtype => 'vega',
+#        },
+#        -max_retry_count  => 5,
+#        -hive_capacity    => 10,
+#        -rc_name          => 'mem',
+#        -can_be_empty     => 1,
+#      },
 
       {
         -logic_name => 'GeneCount',

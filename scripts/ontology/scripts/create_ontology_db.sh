@@ -103,10 +103,8 @@ if ! [ -z "$mart" ]; then
     sed -e "s/%MART_NAME%/$mart/g" build_ontology_mart.sql | sed -e "s/%ONTOLOGY_DB%/$dbname/g" > $TMP_SQL
     $srv $mart < $TMP_SQL
     #rm -f $TMP_SQL
-    msg "Cleaning excess rows in $mart"
-    for table in $($srv $mart -e "show tables like \"closure%\""); do
-	msg "Cleaning excess rows in $mart $table"
-	$srv $mart -e "delete from $table where name_302 is null";
+    msg "Cleaning up and optimizing tables in $mart"
+    for table in $($srv --skip-column-names $mart -e "show tables like \"closure%\""); do
 	cnt=$($srv $mart -e "select count(*) from $table")
 	if [ "$cnt" == "0" ]; then
 	    msg "Dropping table $table from $mart"
@@ -117,7 +115,7 @@ if ! [ -z "$mart" ]; then
 	fi
     done
     msg "Creating the dataset_name table for mart database $mart"
-    perl $BASE_DIR/ensembl-biomart/scripts/generate_names.pl $($srv details script) -mart $mart -div ensembl -name _closure -main main || {
+    perl $BASE_DIR/ensembl-biomart/scripts/generate_names.pl $($srv details script) -mart $mart -div ensembl || {
         msg "Failed to create dataset_name table"
         exit 1
     }
@@ -128,6 +126,16 @@ if ! [ -z "$mart" ]; then
     }
     msg "Populating meta tables for mart database $mart SO mini template"
     perl $BASE_DIR/ensembl-biomart/scripts/generate_meta.pl $($srv details script) -dbname $mart -template $BASE_DIR/ensembl-biomart/scripts/templates/ontology_mini_template_template.xml -template_name ontology_mini -ds_basename mini || {
+        msg "Failed to populate meta table for mart database $mart"
+        exit 1
+    }
+    msg "Populating meta tables for mart database $mart SO regulation template"
+    perl $BASE_DIR/ensembl-biomart/scripts/generate_meta.pl $($srv details script) -dbname $mart -template $BASE_DIR/ensembl-biomart/scripts/templates/ontology_regulation_template_template.xml -template_name ontology_regulation -ds_basename regulation || {
+        msg "Failed to populate meta table for mart database $mart"
+        exit 1
+    }
+    msg "Populating meta tables for mart database $mart SO motif template"
+    perl $BASE_DIR/ensembl-biomart/scripts/generate_meta.pl $($srv details script) -dbname $mart -template $BASE_DIR/ensembl-biomart/scripts/templates/ontology_motif_template_template.xml -template_name ontology_motif -ds_basename motif || {
         msg "Failed to populate meta table for mart database $mart"
         exit 1
     }

@@ -82,9 +82,7 @@ return [
   [qw/dna dna toplevel/],
   [qw/dna dna_rm toplevel/],
   [qw/pep pep all/],
-# [qw/pep pep abinitio/],
   [qw/cdna cdna all/],
-# [qw/cdna cdna abinitio/],
   [qw/ncrna ncrna/],
  ];
 }
@@ -107,7 +105,7 @@ sub _convert {
       my $target_file_unzip = File::Spec->catdir($target_dir, $file_name);
 
       `cp $source_file $target_dir`;
-      `gunzip $target_file`;
+      `gunzip -f $target_file`;
       # Replace fasta header
       `perl -pi -e 's/^>/>$prefix/' $target_file_unzip`;
     }

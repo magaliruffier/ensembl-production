@@ -50,7 +50,7 @@ Allowed parameters are:
 
 =item release - The current release we are emitting
 
-=item type - The database type of data we are emitting. Should be core or vega
+=item type - The database type of data we are emitting. Should be core
 
 =back
 
@@ -79,8 +79,8 @@ my %exception_type_to_description = ('REF' => 'reference',
 sub param_defaults {
   my ($self) = @_;
   return {
-    supported_types => { core => 1, vega => 1 },
-    validator => 'xmlstarlet', #can be xmlstarlet or xmllint
+    supported_types => { core => 1 },
+    validator => 'xmllint', #can be xmlstarlet or xmllint
     xmlstarlet => 'xml',
     xmllint => 'xmllint',
   };
@@ -168,8 +168,7 @@ sub run {
   	$gene_description,                   $extdb_db_display_name,
   	$xref_primary_acc,                   $xref_display_label,
   	$analysis_description_display_label, $analysis_description,
-  	$gene_source,                        $gene_status,
-  	$gene_biotype
+        $gene_source,                        $gene_biotype
        ) = @$row;
     if ( $old{'gene_id'} != $gene_id ) {
       if ( $old{'gene_id'} ) {
@@ -230,7 +229,6 @@ sub run {
   	      'ana_desc_label' => $analysis_description_display_label,
   	      'ad'             => $analysis_description,
   	      'source'         => ucfirst($gene_source),
-  	      'st'             => $gene_status,
   	      'biotype'        => $gene_biotype
   	     );
       $old{'source'} =~ s/base/Base/;
@@ -480,7 +478,7 @@ sub _fetch_gene_info {
                                                               g.stable_id AS gsid, t.stable_id AS tsid, tr.stable_id AS trsid,
                                                               g.description, ed.db_name, x.dbprimary_acc, 
                                                               x.display_label, ad.display_label, ad.description, 
-                                                              g.source, g.status, g.biotype
+                                                              g.source, g.biotype
                                                        FROM ((
                                                              ( gene AS g, analysis_description AS ad, transcript AS t) 
                                                              LEFT JOIN 

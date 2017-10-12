@@ -30,6 +30,7 @@ Usage:
   $padding --host server1 --host server2 [...] \\
   $padding --port 3306 --user user --pass passwd \\
   $padding --muser user-master-server --mpass pass-master-server
+  $padding --nointeraction
 
 or
   $0 --help
@@ -70,6 +71,9 @@ where
   --help/-h     Displays this help text.
 
   --about/-a    Displays a text about this program (what it does etc.).
+
+  --nointeraction/-nI  Disable user input to allow the script to run as part of a cronjob
+
 USAGE_END
 } ## end sub usage
 
@@ -112,6 +116,7 @@ my ( $user,  $pass )  = ( 'ensro',    undef );
 
 my $opt_help  = 0;
 my $opt_about = 0;
+my $opt_nointeraction = 0;
 
 if ( !GetOptions( 'release|r=i'  => \$release,
                   'mhost|mh=s'   => \$mhost,
@@ -124,7 +129,9 @@ if ( !GetOptions( 'release|r=i'  => \$release,
                   'muser|mu=s' => \$muser,
                   'mpass|mp=s' => \$mpass,
                   'help|h!'      => \$opt_help,
-                  'about!'       => \$opt_about )
+                  'about!'       => \$opt_about,
+                  'nointeraction|nI!' => \$opt_nointeraction
+                   )
      || $opt_help )
 {
   usage();
@@ -260,6 +267,11 @@ if ( scalar( keys(%databases) ) == 0 ) {
   printf( "Did not find any new databases for release %s\n", $release );
 } 
 else {
+  my $division_species =
+      'INSERT IGNORE INTO division_species '
+    . '(division_id, species_id) '
+    . 'VALUES (?, ?)';
+  my $division_species_query = $dbh->prepare($division_species);
   my $statement =
       'INSERT INTO db '
     . '(species_id, is_current, db_type, '
@@ -276,6 +288,7 @@ SQL
     
     my @already_recorded = $dbh->selectrow_array('select count(1) from db where species_id =? and db_type =? and db_release =?', 
       {}, $db_hash->{species_id}, $db_hash->{db_type}, $release);
+
       
     if($already_recorded[0]) {
       my @name = $dbh->selectrow_array('select common_name from species where species_id =?', {}, $db_hash->{species_id});
@@ -289,6 +302,8 @@ SQL
       $update_sth->bind_param( 6, $db_hash->{'db_type'},      SQL_VARCHAR );
       $update_sth->bind_param( 7, $release,                   SQL_INTEGER );
       $update_sth->execute();
+
+
     }
     else {
       printf( "Inserting database '%s' into "
@@ -303,6 +318,13 @@ SQL
       $sth->bind_param( 6, $db_hash->{'db_host'},     SQL_VARCHAR );
   
       $sth->execute();
+
+          printf( "Inserting database '%s' into "
+                . "the production database division_species table if it doesn't exist\n",
+              $database );
+      $division_species_query->bind_param( 1, 1,  SQL_INTEGER );
+      $division_species_query->bind_param( 2, $db_hash->{'species_id'},  SQL_INTEGER );
+      $division_species_query->execute();
     }
   }
   $sth->finish();
@@ -326,9 +348,16 @@ if ( scalar( keys(%existing_databases) ) !=
       if($db_release != $release) {
         next; #if db release not same as the current one then skip
       }
-      printf( "\t%s. Remove this database? (y/N): ", $db_name );
-      my $yesno = <STDIN>;
-      chomp($yesno);
+      my $yesno;
+      if ($opt_nointeraction) {
+        printf( "\t%s. Removing this database: ", $db_name );
+        $yesno='y';
+      }
+      else{
+        printf( "\t%s. Remove this database? (y/N): ", $db_name );
+        $yesno = <STDIN>;
+        chomp($yesno);
+      }
       if ( lc($yesno) =~ /^y(?:es)?$/ ) {
         my @dbid = $dbh->selectrow_array('select db_id from db_list where full_db_name =?', {}, $db_name);
         my $sth = $dbh->prepare('delete from db where db_id =?');
