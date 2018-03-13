@@ -11,7 +11,15 @@ sub run {
     my $event = $self->param_required('event');
     my $genome = $event->{genome};
     $self->log()->info("Generating job for species $genome");
-    $self->dataflow_output_id({species => $genome}, 1);
-	return;
+    $self->dataflow_output_id({species => $genome}, 2);
+    # main semaphore flow to 1 with original input
+    $self->dataflow_output_id(
+			      {
+			       init_job_id=>$self->input_job()->dbID(),
+			       event=>$event
+			      },
+			      1
+    );
+    return;
 }
 1;
