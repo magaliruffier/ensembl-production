@@ -140,19 +140,19 @@ sub pipeline_analyses {
 	  my $pipeline_flow;
 	  return [
 		  {
-			  -logic_name => 'new_assembly_event',
+			  -logic_name => 'event_dump_dna',
 			  -module =>
 'Bio::EnsEMBL::Production::Pipeline::EventHandling::EventHandler',
 			  -hive_capacity   => -1,
 			  -rc_name         => 'default',
 			  -max_retry_count => 1,
 			  -flow_into       => {
-				  '2->A' => [ 'dump_fasta_dna', 'dump_fasta_pep' ],
+				  '2->A' => [ 'dump_fasta_dna' ],
 				  'A->1' => ['complete_job']
 			  }
 		  },
 		  {
-			  -logic_name => 'new_genebuild_event',
+			  -logic_name => 'event_dump_peptide',
 			  -module =>
 'Bio::EnsEMBL::Production::Pipeline::EventHandling::EventHandler',
 			  -hive_capacity   => -1,
