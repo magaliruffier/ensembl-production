@@ -147,7 +147,7 @@ sub pipeline_analyses {
 			  -rc_name         => 'default',
 			  -max_retry_count => 1,
 			  -flow_into       => {
-				  '1->A' => [ 'dump_fasta_dna', 'dump_fasta_pep' ],
+				  '2->A' => [ 'dump_fasta_dna', 'dump_fasta_pep' ],
 				  'A->1' => ['complete_job']
 			  }
 		  },
@@ -159,7 +159,8 @@ sub pipeline_analyses {
 			  -rc_name         => 'default',
 			  -max_retry_count => 1,
 			  -flow_into       => {
-				  '1' => ['dump_fasta_pep']
+				  '2->A' => ['dump_fasta_pep'],
+				  'A->1' => ['complete_job']
 			  }
 		  },
 
