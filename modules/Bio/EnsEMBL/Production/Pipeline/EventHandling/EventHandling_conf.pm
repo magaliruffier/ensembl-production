@@ -71,6 +71,7 @@ sub pipeline_create_commands {
 		# inheriting database and hive tables' creation
 		@{ $self->SUPER::pipeline_create_commands },
 		'mkdir -p ' . $self->o('ftp_dir'),
+		$self->db_cmd('CREATE TABLE job_progress (job_progress_id int(11) NOT NULL AUTO_INCREMENT, job_id int(11) NOT NULL , message TEXT,  PRIMARY KEY (job_progress_id))'),
 		$self->db_cmd(
 'CREATE TABLE result (job_id int(10), output LONGTEXT, PRIMARY KEY (job_id))'
 		),
