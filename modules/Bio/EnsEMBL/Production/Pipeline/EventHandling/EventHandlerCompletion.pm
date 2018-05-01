@@ -9,7 +9,7 @@ use base qw(Bio::EnsEMBL::Production::Pipeline::Common::Base);
 sub run {
     my ($self) = @_;
     my $token = $self->param_required('init_job_id');
-    my $output = {"status"=>"success", "event"=>$self->param_required("event")]};
+    my $output = {"status"=>"success", "event"=>$self->param_required("event")};
     $self->dataflow_output_id(	   
 			      {
 			       job_id => $token,
