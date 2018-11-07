@@ -28,7 +28,7 @@ use URI::file;
 use File::Basename;
 use File::Spec::Functions;
 use File::Path qw/make_path/;
-use XrefParser::BaseParser;
+use Bio::EnsEMBL::Xref::DBSQL::BaseAdaptor;
 use IO::File;
 use JSON;
 use Bio::EnsEMBL::Hive::Utils::URL;
