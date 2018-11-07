@@ -23,7 +23,6 @@ use warnings;
 
 use Carp;
 
-use XrefParser::Database;
 use File::Basename;
 
 use parent qw/Bio::EnsEMBL::Production::Pipeline::Xrefs::Base/;
@@ -41,9 +40,9 @@ sub run {
 				    release_file => $self->param('release_file') });
 
   eval { $parser->run(); };
-  croak sprintf("Parsing %s source failed: $@", $params->{parser}) if $@;
+  croak sprintf("Parsing %s source failed: $@", $self->param('parser')) if $@;
 
-  $self->cleanup_DBAdaptor($db) if defined $db;
+  $self->cleanup_DBAdaptor($self->params('db')) if defined $self->param('db');
 }
 
 =head2 make_parser
@@ -55,7 +54,7 @@ Factory method: instantiate requested parser
 sub make_parser {
   my ($self, $params) = @_;
 
-  my $module = "XrefParser::" . $params->{parser};
+  my $module = "Bio::EnsEMBL::Xref::Parser::" . $params->{parser};
   eval "require $module";
   croak "Unable to instantiate parser: $@" if $@;
 
@@ -65,17 +64,17 @@ sub make_parser {
      source_id  => $params->{source_id},
      species_id => $params->{species_id},
      species    => $params->{species},
-     rel_file   => $params->{release_file},
+     rel_file   => $params->{release_file} // undef,
      files      => [ $params->{file_name} ],
-     xref_dba   => Bio::EnsEMBL::Xref::DBSQL::BaseAdaptor->new({host    => $host,
+     xref_dba   => Bio::EnsEMBL::Xref::DBSQL::BaseAdaptor->new(host    => $host,
 								dbname  => $dbname,
 								port    => $port,
 								user    => $user,
-								pass    => $pass }),
+								pass    => $pass ),
      verbose    => 1
     );
 
-  if (defined $$params->{db}) {
+  if (defined $params->{db}) {
     my $registry = 'Bio::EnsEMBL::Registry';
     
     $args{dba} = $registry->get_DBAdaptor($params->{species}, $params->{db});
