@@ -42,7 +42,7 @@ sub run {
   eval { $parser->run(); };
   croak sprintf("Parsing %s source failed: $@", $self->param('parser')) if $@;
 
-  $self->cleanup_DBAdaptor($self->params('db')) if defined $self->param('db');
+  $self->cleanup_DBAdaptor($self->param('db')) if defined $self->param('db');
 }
 
 =head2 make_parser
