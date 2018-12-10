@@ -95,15 +95,15 @@
       "priority" : 2
     },
     {
-      "name" : "Reactome",
-      "parser" : "ReactomeParser",
+      "name" : "Reactome_gene",
+      "parser" : "ReactomeDirectParser",
       "file" : "http://www.reactome.org/download/current/Ensembl2Reactome_All_Levels.txt",
       "release" : "http://www.reactome.org/ReactomeRESTfulAPI/RESTfulWS/version",
       "priority" : 1
     },
     {
-      "name" : "Reactome",
-      "parser" : "ReactomeParser",
+      "name" : "Reactome_translation",
+      "parser" : "ReactomeUniProtParser",
       "file" : "http://www.reactome.org/download/current/UniProt2Reactome_All_Levels.txt",
       "release" : "http://www.reactome.org/ReactomeRESTfulAPI/RESTfulWS/version",
       "priority" : 2
