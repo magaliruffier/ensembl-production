@@ -128,7 +128,7 @@ sub load_checksum {
     $file =~ s/\n//;
     if ($file =~ /checksum/) { next; }
     my $input_file = catfile($checksum_dir, $file);
-    my $input_fh = XrefParser::BaseParser->get_filehandle($input_file);
+    my $input_fh = Bio::EnsEMBL::Xref::DBSQL::BaseAdaptor->get_filehandle($input_file);
     while(my $line = <$input_fh>) {
       chomp $line;
       my ($id, $checksum) = split(/\s+/, $line);
