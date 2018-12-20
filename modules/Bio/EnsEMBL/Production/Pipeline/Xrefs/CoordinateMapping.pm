@@ -48,7 +48,7 @@ use Bio::EnsEMBL::Xref::Mapper::CoordinateMapper;
 
 use parent qw/Bio::EnsEMBL::Production::Pipeline::Xrefs::Base/;
 
-=head2 dbi
+=head2 run
   Runner for CoordinateMpping analysis. 
   Initialize CoordinateMapper with xref and core db adaptors and call run_coordinatemapping. 
   Ensure dir pointed by base_path exists
