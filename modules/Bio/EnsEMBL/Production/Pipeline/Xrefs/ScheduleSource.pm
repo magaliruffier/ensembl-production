@@ -20,7 +20,7 @@ package Bio::EnsEMBL::Production::Pipeline::Xrefs::ScheduleSource;
 
 use strict;
 use warnings;
-use XrefParser::Database;
+use Bio::EnsEMBL::Xref::DB;
 use File::Basename;
 use File::Spec::Functions;
 use Carp;
@@ -38,28 +38,30 @@ sub run {
   my $order_priority   = $self->param_required('priority');
 
   my $source_url       = $self->param_required('source_url');
+  my $db_url           = $self->param_required('xref_url');
 
-  my $db_url           = $self->param('xref_url');
-  my $user             = $self->param('xref_user');
-  my $pass             = $self->param('xref_pass');
-  my $host             = $self->param('xref_host');
-  my $port             = $self->param('xref_port');
-
-  if ($db_url) {
-    ($user, $pass, $host, $port) = $self->parse_url($db_url);
-  }
+  my ($user, $pass, $host, $port) = $self->parse_url($db_url);
 
   # Create Xref database
   my $dbname = $species . "_xref_update_" . $release;
-  my $dbc = XrefParser::Database->new({
-            host    => $host,
-            dbname  => $dbname,
-            port    => $port,
-            user    => $user,
-            pass    => $pass });
-  $dbc->create($sql_dir, 1, 1) if $order_priority == 1; 
+  my $create = 0;
+  $create = 1 if $order_priority == 1;
+  my $xref_db = Bio::EnsEMBL::Xref::DB->new(
+    config => {
+        host    => $host,
+        db      => $dbname,
+        port    => $port,
+        user    => $user,
+        pass    => $pass,
+        create  => $create,
+        engine  => 'MyISAM',
+        driver  => 'mysql'
+    },
+    config_file => 'myfile'
+  );
+  $xref_db->populate_metadata("$sql_dir/xref_config.ini") if $order_priority == 1;
   my $xref_db_url = sprintf("mysql://%s:%s@%s:%s/%s", $user, $pass, $host, $port, $dbname);
-  my $xref_dbi = $dbc->dbi();
+  my $xref_dbh = $xref_db->schema->storage->dbh;
 
   my $species_id = $self->get_taxon_id($species);
   my $division_id = $self->get_division_id($species);
@@ -77,7 +79,7 @@ sub run {
     if ($priority != $order_priority) { next; }
 
     # Some sources are species-specific
-    my $source_id = $self->get_source_id($xref_dbi, $parser, $species_id, $name, $division_id);
+    my $source_id = $self->get_source_id($xref_dbh, $parser, $species_id, $name, $division_id);
     if (!defined $source_id) { next; }
 
     # Some sources need connection to a species database

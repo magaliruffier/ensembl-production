@@ -39,7 +39,7 @@ sub default_options {
            'pipeline_name'    => 'xref_update_'.$self->o('release'),
 
            'work_dir'         => $self->o('ENV', 'HOME')."/work/lib",
-           'sql_dir'          => $self->o('work_dir')."/ensembl/misc-scripts/xref_mapping",
+           'sql_dir'          => $self->o('work_dir')."/ensembl-xref/config",
  
            ## 'job_factory' parameters
            'species'          => [],
