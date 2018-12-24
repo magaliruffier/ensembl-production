@@ -21,7 +21,7 @@ package Bio::EnsEMBL::Production::Pipeline::Xrefs::ProcessAlignment;
 use strict;
 use warnings;
 
-use XrefMapper::ProcessMappings;
+use Bio::EnsEMBL::Xref::Mapper::ProcessMappings;
 
 use parent qw/Bio::EnsEMBL::Production::Pipeline::Xrefs::Base/;
 
@@ -34,8 +34,10 @@ sub run {
   my $release      = $self->param_required('release');
 
   $self->dbc()->disconnect_if_idle() if defined $self->dbc();
-  my $mapper = $self->get_xref_mapper($xref_url, $species, $base_path, $release);
-  my $parser = XrefMapper::ProcessMappings->new($mapper);
+
+  # get xref db adaptor
+  my $xref_dba = $self->get_xref_dba($xref_url);
+  my $parser = Mapper::ProcessMappings->new( $xref_dba );
   $parser->process_mappings();
 
 }
