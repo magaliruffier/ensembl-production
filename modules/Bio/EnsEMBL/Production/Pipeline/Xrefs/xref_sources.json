@@ -2,7 +2,7 @@
     {
       "name" : "ArrayExpress",
       "parser" : "ArrayExpressParser",
-      "file" : "Database",
+      "file" : "ftp://ftp.ebi.ac.uk/pub/databases/microarray/data/atlas/bioentity_properties/ensembl/*",
       "db" : "core",
       "priority" : 1
     },
@@ -10,7 +10,7 @@
       "name" : "CCDS",
       "parser" : "CCDSParser",
       "file" : "Database",
-      "db" : "ccds",
+      "db" : "core",
       "priority" : 1
     },
     {
@@ -62,12 +62,6 @@
       "parser" : "MGI_Desc_Parser",
       "file" : "http://www.informatics.jax.org/downloads/reports/MRK_List2.rpt",
       "priority" : 1
-    },
-    {
-      "name" : "MGI_ccds",
-      "parser" : "MGI_CCDS_Parser",
-      "file" : "ftp://ftp.ncbi.nlm.nih.gov/pub/CCDS/current_mouse/CCDS.current.txt",
-      "priority" : 2
     },
     {
       "name" : "MIM2GENE",
@@ -256,7 +250,7 @@
       "name" : "HGNC",
       "parser" : "HGNCParser",
       "file" : "https://www.genenames.org/cgi-bin/download?col=gd_hgnc_id&col=gd_app_sym&col=gd_app_name&col=gd_prev_sym&col=gd_aliases&col=gd_pub_eg_id&col=gd_pub_ensembl_id&col=gd_pub_refseq_ids&col=gd_ccds_ids&col=gd_lsdb_links&status=Approved&status_opt=2&where=&order_by=gd_app_sym_sort&format=text&limit=&hgnc_dbtag=on&submit=submit",
-      "db" : "ccds",
+      "db" : "core",
       "priority" : 2
     }
 ]
