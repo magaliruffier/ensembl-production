@@ -274,6 +274,26 @@ sub get_division_id {
   return $division_id;
 }
 
+sub get_xref_dba {
+  my $self = shift;
+  my $url = shift;
+
+ # parse the xref_url and get connection params
+  my ( $user, $pass, $host, $port, $dbname ) = $self->parse_url($url);
+
+  # get xref db adaptor
+  my $xref_dba = Bio::EnsEMBL::Xref::DBSQL::BaseAdaptor->new(
+    host    => $host,
+    dbname  => $dbname,
+    port    => $port,
+    user    => $user,
+    pass    => $pass,
+    verbose => 1
+  );
+
+  return $xref_dba;
+}
+
 
 1;
 

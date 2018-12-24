@@ -62,18 +62,8 @@ sub run {
 
   $self->dbc()->disconnect_if_idle() if defined $self->dbc();
 
-  # parse the xref_url and get connection params
-  my ( $user, $pass, $host, $port, $dbname ) = $self->parse_url($xref_url);
-
   # get xref db adaptor
-  my $xref_dba = Bio::EnsEMBL::Xref::DBSQL::BaseAdaptor->new(
-    host    => $host,
-    dbname  => $dbname,
-    port    => $port,
-    user    => $user,
-    pass    => $pass,
-    verbose => 1
-  );
+  my $xref_dba = $self->get_xref_dba($xref_url);
 
   # get core db adaptor
   my $registry = 'Bio::EnsEMBL::Registry';
